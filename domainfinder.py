@@ -152,7 +152,7 @@ class DomainFinder:
         self.whoisThread = WhoisQueue()
         self.whoisThread.start()
         self.match = re.compile(match)
-        self.hostOutCheck = re.compile("(.*has address.*)|(.*handled by.*)|(.*NXDOMAIN.*)|(.*NOERROR.*)|(.*SERVFAIL.*)|(.*REFUSED.*)|(.*is an alias.*)")
+        self.hostOutCheck = re.compile("(.*has address.*)|(.*handled by.*)|(.*NOERROR.*)|(.*SERVFAIL.*)|(.*REFUSED.*)|(.*is an alias.*)")
         #print min_len, max_len, tld
     
     def stop(self):
