@@ -153,6 +153,7 @@ class DomainFinder:
         self.whoisThread.start()
         self.match = re.compile(match)
         self.hostOutCheck = re.compile("(.*has address.*)|(.*handled by.*)|(.*NOERROR.*)|(.*SERVFAIL.*)|(.*REFUSED.*)|(.*is an alias.*)")
+        self.validDNS = re.compile('^(?![0-9]+$)(?!-)[a-zA-Z0-9-]{,63}(?<!-)$')
         #print min_len, max_len, tld
     
     def stop(self):
@@ -183,7 +184,7 @@ class DomainFinder:
         self.calls += 1
         domain = prefix+self.chars[charindex]
         #print domain, prefix, charindex, self.calls
-        if self.min_len <= len(domain) and self.match.match(domain):
+        if self.min_len <= len(domain) and self.match.match(domain) and self.validDNS.match(domain):
             #print domain
             sys.stdout.write('\rTrying '+domain+self.tld+'...')
             sys.stdout.flush()
