@@ -116,7 +116,7 @@ class WhoisQueue(threading.Thread):
                     'be' : { 
                         'free'        : [dotallCompile('.*Status:\W*AVAILABLE.*')],
                         'connected'   : [dotallCompile('.*Status:\W*NOT\W*AVAILABLE.*')],
-                        'refused'     : [],
+                        'refused'     : [dotallCompile('.*IP address blocked.*')],
                         'unavailable' : []
                     },
                 }
@@ -250,14 +250,30 @@ def usage():
     print "Usage:"
     print "\n--min=1"
     print "    Minimal length of domain (without tld). Default=1)"
+    
     print "\n--max=2"
     print "    Max length of domain (without tld). Default=2)"
+    
     print "\n--chars=\"abcdefghijklmenopqrstuvwxyz0123456789\""
     print "    Charcters to use in domain. Default=\"abcdefghijklmenopqrstuvwxyz0123456789\")"
+    
     print "\n--tld=\".de\""
     print "    Top-Level-Domain to use. Default=\".de\")"
+    
     print "\n--match=\".*\""
     print "    Domain has to match this regex"
+    
+    print "\n--match=\".*\""
+    print "    Domain has to match this regex"
+    
+    print "\n--letters-only"
+    print "    Only use letters. Equal to chars=\"abcdefghijklmnopqrstuvwxyz\"."
+    print "    chars will override this setting."
+    
+    print "\n--include-hyphen"
+    print "    Appends the hyphen ('-') to chars."
+    print "    chars will override this setting."
+    
     print "\n--help"
     print "    Display this help."
     sys.exit(0)
@@ -267,7 +283,7 @@ def main():
         options, remainder = getopt.getopt(
             sys.argv[1:],
             '',
-            ['min=','max=','tld=','chars=','match=','help']
+            ['min=','max=','tld=','chars=','match=','help','letters-only','include-hyphen']
         )
         min_len=1
         max_len=2
@@ -281,12 +297,17 @@ def main():
                 max_len = a
             elif o == '--tld':
                 tld = a
+            elif o == '--letters-only':
+                chars = list("abcdefghijklmnopqrstuvwxyz")
+            elif o == '--include-hyphen':
+                chars.append('-')
             elif o == '--chars':
                 chars = list(a)
             elif o == '--match':
                 match = a
             elif o == '--help':
                 usage()
+            
         df = DomainFinder(min_len,max_len,tld,chars,match)
         try:
             df.findDomain()
