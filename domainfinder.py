@@ -114,6 +114,13 @@ class WhoisQueue(threading.Thread):
                         self.connectedDomain(domain, out)
                     else:
                         self.unexpectedResponse(domain, out)
+                elif tld == "be":
+                    if not out.find('Status: AVAILABLE') == -1:
+                        self.freeDomain(domain, out)
+                    elif not out.find('Status: NOT AVAILABLE') == -1:
+                        self.connectedDomain(domain, out)
+                    else:
+                        self.unexpectedResponse(domain, out)
                 else:
                     print tld+" not supported for whois detection"
                 for i in range(int(self.waitBetweenRequests)):
