@@ -96,10 +96,10 @@ class WhoisQueue(threading.Thread):
                         'unavailable' : []
                     },
                     'eu' : { 
-                        'free'        : [dotallCompile('.*Status:.*AVAILABLE.*')],
+                        'free'        : [dotallCompile('.*Status:\W*AVAILABLE.*')],
                         'connected'   : [dotallCompile('.*Technical:*')],
                         'refused'     : [],
-                        'unavailable' : [dotallCompile('.*Status:.*NOT AVAILABLE*')]
+                        'unavailable' : [dotallCompile('.*Status:.*NOT\W*AVAILABLE*')]
                     },
                     'org' : { 
                         'free'        : [dotallCompile('.*NOT FOUND.*')],
@@ -114,8 +114,8 @@ class WhoisQueue(threading.Thread):
                         'unavailable' : []
                     },
                     'be' : { 
-                        'free'        : [dotallCompile('.*Status:.*AVAILABLE.*')],
-                        'connected'   : [dotallCompile('.*Status:.*NOT AVAILABLE.*')],
+                        'free'        : [dotallCompile('.*Status:\W*AVAILABLE.*')],
+                        'connected'   : [dotallCompile('.*Status:\W*NOT\W*AVAILABLE.*')],
                         'refused'     : [],
                         'unavailable' : []
                     },
