@@ -1,8 +1,13 @@
 import commands, subprocess, sys, getopt, threading, time, Queue, datetime, re, traceback
 
+#need this to apply re.DOTALL flag to all regex
+def dotallCompile(regex):
+    return re.compile(regex, flags=re.DOTALL)
+
 class WhoisQueue(threading.Thread):
     domainQueue = Queue.Queue()
     stopped = False
+    unexpectedResponseDomains = []
     notconnectedDomains = []
     connectedDomains = []
     waitBetweenRequests = 10.0
@@ -52,7 +57,7 @@ class WhoisQueue(threading.Thread):
         print "\n\n\n############################################################################"
         print "whois unexpected response:\n\n", response
         print "############################################################################\n\n"
-        self.notconnectedDomains.append(domain)
+        self.unexpectedResponseDomains.append(domain)
         
     def connectedDomain(self, domain, response):
         print "\n             ",domain, "is connected :-("
@@ -70,59 +75,87 @@ class WhoisQueue(threading.Thread):
                 whois.wait()
                 out = whois.stdout.read()
                 tld = domain.split('.')[1]
+
+                hostOutRegex = {
+                    'de'  : { 
+                        'free'        : [dotallCompile('.*Status: free.*')],
+                        'connected'   : [dotallCompile('.*Status: connect.*')],
+                        'refused'     : [dotallCompile('.*Error: 55000000002.*')],
+                        'unavailable' : []
+                    },
+                    'com' : { 
+                        'free'        : [dotallCompile('.*No match for "%s"..*'%(domain.upper))],
+                        'connected'   : [dotallCompile('.*Creation Date:*')],
+                        'refused'     : [],
+                        'unavailable' : []
+                    },
+                    'net' : { 
+                        'free'        : [dotallCompile('.*No match for "%s"..*'%(domain.upper))],
+                        'connected'   : [dotallCompile('.*Creation Date:*')],
+                        'refused'     : [],
+                        'unavailable' : []
+                    },
+                    'eu' : { 
+                        'free'        : [dotallCompile('.*Status:.*AVAILABLE.*')],
+                        'connected'   : [dotallCompile('.*Technical:*')],
+                        'refused'     : [],
+                        'unavailable' : [dotallCompile('.*Status:.*NOT AVAILABLE*')]
+                    },
+                    'org' : { 
+                        'free'        : [dotallCompile('.*NOT FOUND.*')],
+                        'connected'   : [dotallCompile('.*Created On:*')],
+                        'refused'     : [dotallCompile('.*WHOIS LIMIT EXCEEDED*')],
+                        'unavailable' : [dotallCompile('.*Name is reserved*')]
+                    },
+                    'me' : { 
+                        'free'        : [dotallCompile('.*NOT FOUND.*')],
+                        'connected'   : [dotallCompile('.*Nameservers:*')],
+                        'refused'     : [],
+                        'unavailable' : []
+                    },
+                    'be' : { 
+                        'free'        : [dotallCompile('.*Status:.*AVAILABLE.*')],
+                        'connected'   : [dotallCompile('.*Status:.*NOT AVAILABLE.*')],
+                        'refused'     : [],
+                        'unavailable' : []
+                    },
+                }
+
+                #TODO: print message if tld not in dict
+                #else:
+                #    print tld+" not supported for whois detection"
+
+                matched = False
+                for reg in hostOutRegex[tld]['free']:
+                    if reg.match(out):
+                        self.freeDomain(domain, out)
+                        matched = True
+                        break
+                        
+                if not matched:        
+                    for reg in hostOutRegex[tld]['connected']:
+                        if reg.match(out):
+                            self.connectedDomain(domain, out)
+                            matched = True
+                            break
+                            
+                if not matched:
+                    for reg in hostOutRegex[tld]['refused']:
+                        if reg.match(out):
+                            self.refusedDomain(domain, out)
+                            matched = True
+                            break
+
+                if not matched:
+                    for reg in hostOutRegex[tld]['unavailable']:
+                        if reg.match(out):
+                            self.unavailable(domain, out)
+                            matched = True
+                            break
+                        
+                if not matched:
+                    self.unexpectedResponse(domain, out)
                 
-                if tld == "de":
-                    if not out.find('Status: free') == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Error: 55000000002') == -1:
-                        self.refusedDomain(domain, out)
-                    elif not out.find('Status: connect') == -1:
-                        self.connectedDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                elif tld == "com" or tld == "net":
-                    if not out.find('No match for "%s".'%(domain.upper)) == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Creation Date:') == -1:
-                        self.connectedDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                elif tld == "eu":
-                    if not out.find('Status:	AVAILABLE') == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Technical:') == -1:
-                        self.connectedDomain(domain, out)
-                    elif not out.find('Status:	NOT AVAILABLE') == -1:
-                        self.unavailableDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                elif tld == "org":
-                    if not out.find('NOT FOUND') == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Created On:') == -1:
-                        self.connectedDomain(domain, out)
-                    elif not out.find('WHOIS LIMIT EXCEEDED') == -1:
-                        self.refusedDomain(domain, out)
-                    elif not out.find('Name is reserved') == -1:
-                        self.unavailableDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                elif tld == "me":
-                    if not out.find('NOT FOUND') == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Nameservers:') == -1:
-                        self.connectedDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                elif tld == "be":
-                    if not out.find('Status: AVAILABLE') == -1:
-                        self.freeDomain(domain, out)
-                    elif not out.find('Status: NOT AVAILABLE') == -1:
-                        self.connectedDomain(domain, out)
-                    else:
-                        self.unexpectedResponse(domain, out)
-                else:
-                    print tld+" not supported for whois detection"
                 for i in range(int(self.waitBetweenRequests)):
                     self.curWaitProgress = i
                     if not self.stopped:
@@ -132,8 +165,13 @@ class WhoisQueue(threading.Thread):
                 pass
             except:
                 traceback.print_exc(file=sys.stdout)
+                
+        print "\n\nUnexpected whois-response:"
+        print self.unexpectedResponseDomains
+        
         print "checked and connected Domains:"
         print self.connectedDomains
+        
         print "Queued but not checked Domains:"
         queuedDomains = []
         queueEmpty = False
@@ -144,8 +182,10 @@ class WhoisQueue(threading.Thread):
             except Queue.Empty:
                 queueEmpty = True
         print queuedDomains
+        
         print "Not connected Domains:"
         print self.notconnectedDomains
+        
 
 class DomainFinder:
     calls = 0
