@@ -121,7 +121,7 @@ class WhoisQueue(threading.Thread):
                     },
                     'fr' : { 
                         'free'        : [dotallCompile('.*No entries found in the AFNIC Database..*')],
-                        'connected'   : [dotallCompile('.*status:\W*ACTIVE.*')],
+                        'connected'   : [dotallCompile('.*status:\W*(ACTIVE|REGISTERED).*')],
                         'refused'     : [],
                         'unavailable' : []
                     },
