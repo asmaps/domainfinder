@@ -5,6 +5,7 @@ class Generator:
         nav = '<div id="nav"><ul style="display:inline">'
         li = '<ul>'
         last = '-'
+        domains.sort()
         for d in domains:
             if not last[0] == d[0]:
                 last = d
@@ -21,7 +22,7 @@ class Generator:
         out = open('html_out/'+filename, 'w')
         out.write('<html><head><title>Free short .de domains</title></head>\n')
         out.write('<style media="screen" type="text/css">#nav ul, #nav li { display: inline; padding: 5px; }</style>')
-        out.write('<body>\n')
+        out.write('<body><h1>Free Domains</h1>\n')
         out.write(nav)
         out.write(li)
         out.write('</body></html>\n')
