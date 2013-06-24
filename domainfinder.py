@@ -125,6 +125,12 @@ class WhoisQueue(threading.Thread):
                         'refused'     : [],
                         'unavailable' : []
                     },
+                    'nl' : { 
+                        'free'        : [dotallCompile('%s is free'%domain)],
+                        'connected'   : [dotallCompile('.*Status:\W*(active|inactive).*')],
+                        'refused'     : [],
+                        'unavailable' : [dotallCompile('.*Status:\W*excluded.*')]
+                    },
                 }
 
                 #TODO: print message if tld not in dict
