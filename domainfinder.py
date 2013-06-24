@@ -116,7 +116,13 @@ class WhoisQueue(threading.Thread):
                     'be' : { 
                         'free'        : [dotallCompile('.*Status:\W*AVAILABLE.*')],
                         'connected'   : [dotallCompile('.*Status:\W*NOT\W*AVAILABLE.*')],
-                        'refused'     : [dotallCompile('.*IP address blocked.*')],
+                        'refused'     : [dotallCompile('.*IP address blocked.*|.*Excessive querying.*')],
+                        'unavailable' : []
+                    },
+                    'fr' : { 
+                        'free'        : [dotallCompile('.*No entries found in the AFNIC Database..*')],
+                        'connected'   : [dotallCompile('.*status:\W*ACTIVE.*')],
+                        'refused'     : [],
                         'unavailable' : []
                     },
                 }
