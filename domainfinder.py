@@ -1,4 +1,4 @@
-import commands, subprocess, sys, getopt, threading, time, Queue, datetime, re, traceback
+import commands, subprocess, sys, getopt, threading, time, Queue, datetime, re, traceback, generator
 
 #need this to apply re.DOTALL flag to all regex
 def dotallCompile(regex):
@@ -13,6 +13,10 @@ class WhoisQueue(threading.Thread):
     waitBetweenRequests = 10.0
     curWaitProgress = 0
     waitAfterRefuse = 60
+
+    def __init__(self, domainfinder, *args, **kwargs):
+        super(WhoisQueue, self).__init__(*args, **kwargs)
+        self.domainfinder = domainfinder
     
     def stop(self):
         self.stopped = True
@@ -68,6 +72,7 @@ class WhoisQueue(threading.Thread):
         self.connectedDomains.append(domain)
     
     def run(self):
+        tld = ""
         while not self.stopped:
             try:
                 domain = self.domainQueue.get(block=True, timeout=1)
@@ -203,18 +208,26 @@ class WhoisQueue(threading.Thread):
         
         print "Not connected Domains:"
         print self.notconnectedDomains
+
+        if self.domainfinder.generate_html:
+            gen = generator.Generator()
+            gen.generate_html(
+                "%d%d%s_freedomains.html"%(self.domainfinder.min_len,self.domainfinder.max_len,tld),
+                self.notconnectedDomains
+            )
         
 
 class DomainFinder:
     calls = 0
     stopped = False
     
-    def __init__(self, min_len, max_len, tld, chars, match,*args,**kwargs):
+    def __init__(self, min_len, max_len, tld, chars, generate_html, match,*args,**kwargs):
         self.max_len = int(max_len)
         self.min_len = int(min_len)
         self.tld = tld
         self.chars = chars
-        self.whoisThread = WhoisQueue()
+        self.generate_html = generate_html
+        self.whoisThread = WhoisQueue(self)
         self.whoisThread.start()
         self.match = re.compile(match)
         self.hostOutCheck = re.compile("(.*has address.*)|(.*handled by.*)|(.*NOERROR.*)|(.*SERVFAIL.*)|(.*REFUSED.*)|(.*is an alias.*)")
@@ -291,6 +304,10 @@ def usage():
     print "\n--include-hyphen"
     print "    Appends the hyphen ('-') to chars."
     print "    chars will override this setting."
+
+    print "\n--generate-html"
+    print "    Generate a HTML summary with free domains at the end."
+    print "    File will be put in folder html_out/"
     
     print "\n--help"
     print "    Display this help."
@@ -301,13 +318,14 @@ def main():
         options, remainder = getopt.getopt(
             sys.argv[1:],
             '',
-            ['min=','max=','tld=','chars=','match=','help','letters-only','include-hyphen']
+            ['min=','max=','tld=','chars=','match=','help','letters-only','include-hyphen', 'generate-html']
         )
         min_len=1
         max_len=2
         tld = '.de'
         chars = list("abcdefghijklmenopqrstuvwxyz0123456789")
         match = ".*"
+        generate_html = False
         for o, a in options:
             if o == '--min':
                 min_len = a
@@ -323,10 +341,12 @@ def main():
                 chars = list(a)
             elif o == '--match':
                 match = a
+            elif o == '--generate-html':
+                generate_html = True
             elif o == '--help':
                 usage()
             
-        df = DomainFinder(min_len,max_len,tld,chars,match)
+        df = DomainFinder(min_len,max_len,tld,chars,generate_html,match)
         try:
             df.findDomain()
         except KeyboardInterrupt:

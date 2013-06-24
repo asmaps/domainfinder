@@ -36,3 +36,5 @@ nosetests.xml
 
 #custom files
 domains.txt
+domains.py
+html_out/*
