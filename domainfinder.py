@@ -212,7 +212,12 @@ class WhoisQueue(threading.Thread):
         if self.domainfinder.generate_html:
             gen = generator.Generator()
             gen.generate_html(
-                "%d%d%s_freedomains.html"%(self.domainfinder.min_len,self.domainfinder.max_len,tld),
+                "%d%d%s_freedomains_%s.html"%(
+                    self.domainfinder.min_len,
+                    self.domainfinder.max_len,
+                    tld,
+                    ''.join(self.domainfinder.chars)
+                ),
                 self.notconnectedDomains
             )
         
