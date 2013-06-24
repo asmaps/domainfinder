@@ -116,7 +116,7 @@ class WhoisQueue(threading.Thread):
                     'be' : { 
                         'free'        : [dotallCompile('.*Status:\W*AVAILABLE.*')],
                         'connected'   : [dotallCompile('.*Status:\W*NOT\W*AVAILABLE.*')],
-                        'refused'     : [dotallCompile('.*IP address blocked.*|.*Excessive querying.*')],
+                        'refused'     : [dotallCompile('(.*IP address blocked.*)|(.*Excessive querying.*)')],
                         'unavailable' : []
                     },
                     'fr' : { 
@@ -128,8 +128,14 @@ class WhoisQueue(threading.Thread):
                     'nl' : { 
                         'free'        : [dotallCompile('%s is free'%domain)],
                         'connected'   : [dotallCompile('.*Status:\W*(active|inactive).*')],
-                        'refused'     : [],
+                        'refused'     : [dotallCompile('.*whois.domain-registry.nl: daily whois-limit exceeded for client.*')],
                         'unavailable' : [dotallCompile('.*Status:\W*excluded.*')]
+                    },
+                    'it' : { 
+                        'free'        : [dotallCompile('.*Status:\W*(AVAILABLE|pendingDelete|redemptionPeriod).*')],
+                        'connected'   : [dotallCompile('.*Status:\W*(ok|inactive).*')],
+                        'refused'     : [],
+                        'unavailable' : [dotallCompile('.*Status:\W*UNASSIGNABLE.*')]
                     },
                 }
 
@@ -161,7 +167,7 @@ class WhoisQueue(threading.Thread):
                 if not matched:
                     for reg in hostOutRegex[tld]['unavailable']:
                         if reg.match(out):
-                            self.unavailable(domain, out)
+                            self.unavailableDomain(domain, out)
                             matched = True
                             break
                         
